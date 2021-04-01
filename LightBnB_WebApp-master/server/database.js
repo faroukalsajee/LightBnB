@@ -1,7 +1,13 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
+const { Pool } = require('pg');
 
-/// Users
+const pool = new Pool({
+  user: 'vagrant',
+  password: '123',
+  host: 'localhost',
+  database: 'lightbnb'
+});
 
 /**
  * Get a single user from the database given their email.
@@ -9,18 +15,20 @@ const users = require('./json/users.json');
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
-  }
-  return Promise.resolve(user);
-}
+  const text = `
+  SELECT *
+  FROM users
+  WHERE email = $1
+  `;
+  const values = [email.toLowerCase()];
+
+  return pool.query(text, values)
+    .then(res => res.rows[0])
+    .catch(error => console.error('User Null', error.stack));
+};
 exports.getUserWithEmail = getUserWithEmail;
+
+
 
 /**
  * Get a single user from the database given their id.
@@ -28,8 +36,16 @@ exports.getUserWithEmail = getUserWithEmail;
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function(id) {
-  return Promise.resolve(users[id]);
-}
+  const text = `
+  SELECT * FROM users
+  WHERE id = $1
+  `;
+
+  const values = [id];
+  return pool.query(text,values)
+    .then(res => res.rows[0])
+    .catch(error => console.error('User Null', error.stack));
+};
 exports.getUserWithId = getUserWithId;
 
 
@@ -39,11 +55,30 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser =  function(user) {
+  const userName = user.name;
+  const userPwd = user.password;
+  const userEmail = user.email;
+
+  const text = `
+    INSERT INTO users (name, email, password)
+    VALUES ($1, $2, $3)
+    RETURNING *
+  `;
+
+  const values = [userName, userEmail, userPwd];
+
+  return pool.query(text, values)
+    .then(res => res.rows[0])
+    .catch(err => console.error("Error", err.stack));
+
+  // return pool.query('INSERT INTO users (name,email,password) VALUES ($1,$2,$3) RETURNING *;',[user.name, user.email, user.password])
+  //   .then(res => res.rows[0]);
+  /*
   const userId = Object.keys(users).length + 1;
   user.id = userId;
   users[userId] = user;
-  return Promise.resolve(user);
-}
+  return Promise.resolve(user);*/
+};
 exports.addUser = addUser;
 
 /// Reservations
@@ -55,7 +90,7 @@ exports.addUser = addUser;
  */
 const getAllReservations = function(guest_id, limit = 10) {
   return getAllProperties(null, 2);
-}
+};
 exports.getAllReservations = getAllReservations;
 
 /// Properties
@@ -72,7 +107,7 @@ const getAllProperties = function(options, limit = 10) {
     limitedProperties[i] = properties[i];
   }
   return Promise.resolve(limitedProperties);
-}
+};
 exports.getAllProperties = getAllProperties;
 
 
@@ -86,5 +121,5 @@ const addProperty = function(property) {
   property.id = propertyId;
   properties[propertyId] = property;
   return Promise.resolve(property);
-}
+};
 exports.addProperty = addProperty;
