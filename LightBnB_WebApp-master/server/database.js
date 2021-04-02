@@ -1,12 +1,19 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
-const { Pool } = require('pg');
+const {
+  Pool
+} = require('pg');
 
 const pool = new Pool({
   user: 'vagrant',
   password: '123',
   host: 'localhost',
   database: 'lightbnb'
+});
+
+pool.connect((error) => {
+  if (error) throw error;
+  console.log('Connected to the LightBnB database');
 });
 
 /**
@@ -28,8 +35,6 @@ const getUserWithEmail = function(email) {
 };
 exports.getUserWithEmail = getUserWithEmail;
 
-
-
 /**
  * Get a single user from the database given their id.
  * @param {string} id The id of the user.
@@ -42,35 +47,21 @@ const getUserWithId = function(id) {
   `;
 
   const values = [id];
-  return pool.query(text,values)
+  return pool.query(text, values)
     .then(res => res.rows[0])
     .catch(error => console.error('User Null', error.stack));
 };
 exports.getUserWithId = getUserWithId;
-
 
 /**
  * Add a new user to the database.
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser =  function(user) {
-  const userName = user.name;
-  const userPwd = user.password;
-  const userEmail = user.email;
+const addUser = function(user) {
 
-  const text = `
-    INSERT INTO users (name, email, password)
-    VALUES ($1, $2, $3)
-    RETURNING *
-  `;
-
-  const values = [userName, userEmail, userPwd];
-
-  return pool.query(text, values)
-    .then(res => res.rows[0])
-    .catch(err => console.error("Error", err.stack));
-
+  return pool.query('INSERT INTO users (name,email,password) VALUES ($1,$2,$3) RETURNING *;', [user.name, user.email, user.password])
+    .then(res => res.rows[0]);
 
   /*
   const userId = Object.keys(users).length + 1;
@@ -88,6 +79,7 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
+
   const text = `
   SELECT reservations.*, properties.*, avg(property_reviews.rating) as average_rating
   FROM reservations
@@ -116,6 +108,7 @@ exports.getAllReservations = getAllReservations;
  */
 
 const getAllProperties = function(options, limit = 10) {
+
   // 1
   const queryParams = [];
   // 2
@@ -139,7 +132,6 @@ const getAllProperties = function(options, limit = 10) {
       queryString += `WHERE cost_per_night > $${queryParams.length} `;
     }
   }
-
 
   if (options.maximum_price_per_night) {
     queryParams.push(options.maximum_price_per_night);
