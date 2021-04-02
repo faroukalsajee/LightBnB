@@ -1,5 +1,5 @@
 # LightBnB
-## This is a Lighthouse Labs assignment to practice SQL (PostgreSQL).
+## This is a project to practice implementing SQL (PostgreSQL).
 
 ### Entity Relation Diagram (ERD)
 ![created diagram pic](https://github.com/faroukalsajee/LightBnB/blob/main/Docs/IPbSqz9.png)
